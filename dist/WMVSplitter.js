@@ -30,13 +30,15 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const fluent_ffmpeg_1 = __importDefault(require("fluent-ffmpeg"));
 const splitWMV = (inputPath, outputPath, chunkSize) => {
+    const originalFileName = path.basename(inputPath, path.extname(inputPath));
     // Create the output directory if it doesn't exist
     if (!fs.existsSync(outputPath)) {
         fs.mkdirSync(outputPath);
     }
+    console.log(`Processing file at ${inputPath}`);
     fluent_ffmpeg_1.default.ffprobe(inputPath, function (err, metadata) {
         if (err || !metadata.format || metadata.format.duration === undefined) {
-            console.error('Could not retrieve video duration.');
+            console.error("Could not retrieve video duration.");
             return;
         }
         const duration = metadata.format.duration;
@@ -46,30 +48,32 @@ const splitWMV = (inputPath, outputPath, chunkSize) => {
         // Split the video
         for (let i = 0; i < numChunks; i++) {
             const start = i * chunkDuration;
-            const outputFilePath = path.join(outputPath, `chunk${i}.wmv`);
+            const outputFileName = `${originalFileName}-chunk-${i}.wmv`;
+            const outputFilePath = path.join(outputPath, outputFileName);
             (0, fluent_ffmpeg_1.default)(inputPath)
                 .setStartTime(start)
                 .setDuration(chunkDuration)
                 .output(outputFilePath)
-                .on('end', function (err) {
+                .on("end", function (err) {
+                console.log(`Chunk saved at ${outputFilePath}`);
                 if (!err) {
-                    console.log('conversion Done');
+                    console.log("conversion Done");
                 }
             })
-                .on('error', function (err) {
-                console.log('error: ', err);
+                .on("error", function (err) {
+                console.log("error: ", err);
             })
                 .run();
         }
     });
 };
-const inputDir = path.join(__dirname, '../input/');
-const outputPath = path.join(__dirname, '../output/');
+const inputDir = path.join(__dirname, "../input/");
+const outputPath = path.join(__dirname, "../output/");
 const chunkSize = 100 * 1024 * 1024; // 100MB
 // Find all .wmv files in the input directory
-const files = fs.readdirSync(inputDir).filter(file => file.endsWith('.wmv'));
+const files = fs.readdirSync(inputDir).filter((file) => file.endsWith(".wmv"));
 // Process each file
-files.forEach(file => {
+files.forEach((file) => {
     const inputPath = path.join(inputDir, file);
     splitWMV(inputPath, outputPath, chunkSize);
 });
