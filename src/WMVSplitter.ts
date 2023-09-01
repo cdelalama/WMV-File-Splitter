@@ -85,28 +85,38 @@ const splitWMV = (inputPath: string, outputPath: string, chunkSize: number) => {
     });
 };
 
+const defaultChunkSizeMB = 100; // Default to 100MB
+let chunkSize: number;
+
+try {
+  const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/config.json'), 'utf8'));
+  chunkSize = (config.chunkSizeMB || defaultChunkSizeMB) * 1024 * 1024;
+}
+catch {
+  console.log(`Could not read configuration file. Defaulting to chunk size of ${defaultChunkSizeMB}MB.`);
+  chunkSize = defaultChunkSizeMB * 1024 * 1024;
+}
+
 const inputDir = path.join(__dirname, "../input/");
 const outputPath = path.join(__dirname, "../output/");
-const chunkSize = 100 * 1024 * 1024; // 100MB
 
 const files = fs.readdirSync(inputDir).filter((file) => file.endsWith(".wmv"));
 if (files.length === 0) {
-    console.warn(
-        "No .wmv files found in the input directory. Terminating script."
-    );
-    process.exit(0);
+  console.warn("No .wmv files found in the input directory. Terminating script.");
+  process.exit(0);
 }
+
 const startTime = Date.now();
 
 const processingTasks = files.map((file) => {
-    const inputPath = path.join(inputDir, file);
-    return splitWMV(inputPath, outputPath, chunkSize);
+  const inputPath = path.join(inputDir, file);
+  return splitWMV(inputPath, outputPath, chunkSize);
 });
 
 Promise.all(processingTasks).then(() => {
-    const endTime = Date.now();
-    const elapsedTime = (endTime - startTime) / 1000;
-    console.log(`Processing completed in ${elapsedTime.toFixed(2)} seconds.`);
+  const endTime = Date.now();
+  const elapsedTime = (endTime - startTime) / 1000;
+  console.log(`Processing completed in ${elapsedTime.toFixed(2)} seconds.`);
 }).catch((error) => {
-    console.error("Error during process: ", error);
+  console.error("Error during process: ", error);
 });

@@ -65,9 +65,18 @@ const splitWMV = (inputPath, outputPath, chunkSize) => {
         });
     });
 };
+const defaultChunkSizeMB = 100; // Default to 100MB
+let chunkSize;
+try {
+    const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/config.json'), 'utf8'));
+    chunkSize = (config.chunkSizeMB || defaultChunkSizeMB) * 1024 * 1024;
+}
+catch {
+    console.log(`Could not read configuration file. Defaulting to chunk size of ${defaultChunkSizeMB}MB.`);
+    chunkSize = defaultChunkSizeMB * 1024 * 1024;
+}
 const inputDir = path.join(__dirname, "../input/");
 const outputPath = path.join(__dirname, "../output/");
-const chunkSize = 100 * 1024 * 1024; // 100MB
 const files = fs.readdirSync(inputDir).filter((file) => file.endsWith(".wmv"));
 if (files.length === 0) {
     console.warn("No .wmv files found in the input directory. Terminating script.");
