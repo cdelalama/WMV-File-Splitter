@@ -1,12 +1,12 @@
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import * as fs from "fs";
 import * as path from "path";
 import ffmpeg from "fluent-ffmpeg";
 import ora from "ora";
-const spinner = ora('Processing').start();
+const spinner = ora("Processing").start();
 const splitWMV = (inputPath, outputPath, chunkSize) => {
     const originalFileName = path.basename(inputPath, path.extname(inputPath));
     const processedPath = path.join(__dirname, "../processed");
@@ -31,14 +31,19 @@ const splitWMV = (inputPath, outputPath, chunkSize) => {
         let completedChunks = 0; // Counter for completed chunks
         // Split the video
         for (let i = 0; i < numChunks; i++) {
+            let lastLoggedPercent = 0;
             const start = i * chunkDuration;
             const outputFileName = `${originalFileName}-chunk-${i}.wmv`;
             const outputFilePath = path.join(outputPath, outputFileName);
             ffmpeg(inputPath)
                 .setStartTime(start)
                 .setDuration(chunkDuration)
-                .on('progress', (progress) => {
-                console.log(`Processing chunk ${i + 1} of ${numChunks}: ${progress.percent.toFixed(2)}% done`);
+                .on("progress", (progress) => {
+                const currentPercent = progress.percent.toFixed(0);
+                if (currentPercent - lastLoggedPercent >= 10) {
+                    console.log(`Processing chunk ${i + 1} of ${numChunks}: ${currentPercent}% done`);
+                    lastLoggedPercent = currentPercent;
+                }
             })
                 .output(outputFilePath)
                 .on("end", function (err) {
