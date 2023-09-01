@@ -13,3 +13,5 @@ input/*
 !input/.gitkeep
 output/*
 !output/.gitkeep
+processed/*
+!processed/.gitkeep
