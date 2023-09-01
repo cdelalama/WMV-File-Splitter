@@ -1,38 +1,15 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
-const fluent_ffmpeg_1 = __importDefault(require("fluent-ffmpeg"));
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+import * as fs from "fs";
+import * as path from "path";
+import ffmpeg from "fluent-ffmpeg";
+import ora from "ora";
+const spinner = ora('Processing').start();
 const splitWMV = (inputPath, outputPath, chunkSize) => {
     const originalFileName = path.basename(inputPath, path.extname(inputPath));
     const processedPath = path.join(__dirname, "../processed");
-    let completedChunks = 0; // Counter for completed chunks
     // Create directories if they don't exist
     if (!fs.existsSync(outputPath)) {
         fs.mkdirSync(outputPath);
@@ -41,32 +18,39 @@ const splitWMV = (inputPath, outputPath, chunkSize) => {
         fs.mkdirSync(processedPath);
     }
     console.log(`Processing file at ${inputPath}`);
-    fluent_ffmpeg_1.default.ffprobe(inputPath, function (err, metadata) {
+    ffmpeg.ffprobe(inputPath, function (err, metadata) {
         if (err || !metadata.format || metadata.format.duration === undefined) {
             console.error("Could not retrieve video duration.");
             return;
         }
+        spinner.start();
         const duration = metadata.format.duration;
         const fileSize = fs.statSync(inputPath).size;
         const numChunks = Math.ceil(fileSize / chunkSize);
         const chunkDuration = duration / numChunks;
+        let completedChunks = 0; // Counter for completed chunks
         // Split the video
         for (let i = 0; i < numChunks; i++) {
             const start = i * chunkDuration;
             const outputFileName = `${originalFileName}-chunk-${i}.wmv`;
             const outputFilePath = path.join(outputPath, outputFileName);
-            (0, fluent_ffmpeg_1.default)(inputPath)
+            ffmpeg(inputPath)
                 .setStartTime(start)
                 .setDuration(chunkDuration)
+                .on('progress', (progress) => {
+                console.log(`Processing chunk ${i + 1} of ${numChunks}: ${progress.percent.toFixed(2)}% done`);
+            })
                 .output(outputFilePath)
                 .on("end", function (err) {
-                console.log(`Chunk saved at ${outputFilePath}`);
                 completedChunks++;
+                console.log(`Chunk ${i + 1} processed.`);
                 if (completedChunks === numChunks) {
+                    spinner.stop();
                     const newLocation = path.join(processedPath, path.basename(inputPath));
                     fs.rename(inputPath, newLocation, (err) => {
                         if (err)
                             console.error(`Error moving file: ${err}`);
+                        console.log(`Moved input file to ${newLocation}`);
                     });
                 }
             })
