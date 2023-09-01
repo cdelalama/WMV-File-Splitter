@@ -7,3 +7,9 @@ node_modules
 !.env.project
 !.env.vault
 !.env*.example
+
+# Exclude contents but keep the folders
+input/*
+!input/.gitkeep
+output/*
+!output/.gitkeep
