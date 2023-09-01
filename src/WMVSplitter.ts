@@ -33,7 +33,11 @@ const splitWMV = (inputPath: string, outputPath: string, chunkSize: number) => {
 		const numChunks: number = Math.ceil(fileSize / chunkSize);
 		const chunkDuration: number = duration / numChunks;
 
-		const spinner = ora(`Processing ${numChunks} chunks of approximately ${chunkSize / (1024 * 1024)} MB. This may take a while...`).start();
+		const spinner = ora(
+			`Processing ${numChunks} chunks of approximately ${
+				chunkSize / (1024 * 1024)
+			} MB. This may take a while...`
+		).start();
 
 		let completedChunks = 0;
 
@@ -76,11 +80,21 @@ const chunkSize = 100 * 1024 * 1024; // 100MB
 const files = fs.readdirSync(inputDir).filter((file) => file.endsWith(".wmv"));
 // If no .wmv files found in the input directory, warn and end the script
 if (files.length === 0) {
-	console.warn("No .wmv files found in the input directory. Terminating script.");
+	console.warn(
+		"No .wmv files found in the input directory. Terminating script."
+	);
 	process.exit(0);
 }
+// Start timer
+const startTime = Date.now();
+
 // Process each file
 files.forEach((file) => {
 	const inputPath = path.join(inputDir, file);
 	splitWMV(inputPath, outputPath, chunkSize);
 });
+
+// End the timer and log the duration
+const endTime = Date.now();
+const elapsedTime = (endTime - startTime) / 1000;
+console.log(`Processing completed in ${elapsedTime} seconds.`);

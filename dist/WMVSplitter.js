@@ -64,9 +64,15 @@ if (files.length === 0) {
     console.warn("No .wmv files found in the input directory. Terminating script.");
     process.exit(0);
 }
+// Start timer
+const startTime = Date.now();
 // Process each file
 files.forEach((file) => {
     const inputPath = path.join(inputDir, file);
     splitWMV(inputPath, outputPath, chunkSize);
 });
+// End the timer and log the duration
+const endTime = Date.now();
+const elapsedTime = (endTime - startTime) / 1000;
+console.log(`Processing completed in ${elapsedTime} seconds.`);
 //# sourceMappingURL=WMVSplitter.js.map
