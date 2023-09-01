@@ -6,11 +6,9 @@ import * as fs from "fs";
 import * as path from "path";
 import ffmpeg from "fluent-ffmpeg";
 import ora from "ora";
-const spinner = ora("Processing").start();
 const splitWMV = (inputPath, outputPath, chunkSize) => {
     const originalFileName = path.basename(inputPath, path.extname(inputPath));
     const processedPath = path.join(__dirname, "../processed");
-    // Create directories if they don't exist
     if (!fs.existsSync(outputPath)) {
         fs.mkdirSync(outputPath);
     }
@@ -23,32 +21,22 @@ const splitWMV = (inputPath, outputPath, chunkSize) => {
             console.error("Could not retrieve video duration.");
             return;
         }
-        spinner.start();
         const duration = metadata.format.duration;
         const fileSize = fs.statSync(inputPath).size;
         const numChunks = Math.ceil(fileSize / chunkSize);
         const chunkDuration = duration / numChunks;
-        let completedChunks = 0; // Counter for completed chunks
-        // Split the video
+        const spinner = ora(`Processing ${numChunks} chunks of approximately ${chunkSize / (1024 * 1024)} MB. This may take a while...`).start();
+        let completedChunks = 0;
         for (let i = 0; i < numChunks; i++) {
-            let lastLoggedPercent = 0;
             const start = i * chunkDuration;
             const outputFileName = `${originalFileName}-chunk-${i}.wmv`;
             const outputFilePath = path.join(outputPath, outputFileName);
             ffmpeg(inputPath)
                 .setStartTime(start)
                 .setDuration(chunkDuration)
-                .on("progress", (progress) => {
-                const currentPercent = progress.percent.toFixed(0);
-                if (currentPercent - lastLoggedPercent >= 10) {
-                    console.log(`Processing chunk ${i + 1} of ${numChunks}: ${currentPercent}% done`);
-                    lastLoggedPercent = currentPercent;
-                }
-            })
                 .output(outputFilePath)
                 .on("end", function (err) {
                 completedChunks++;
-                console.log(`Chunk ${i + 1} processed.`);
                 if (completedChunks === numChunks) {
                     spinner.stop();
                     const newLocation = path.join(processedPath, path.basename(inputPath));
