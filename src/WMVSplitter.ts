@@ -4,10 +4,17 @@ import ffmpeg from "fluent-ffmpeg";
 
 const splitWMV = (inputPath: string, outputPath: string, chunkSize: number) => {
 	const originalFileName = path.basename(inputPath, path.extname(inputPath));
-	// Create the output directory if it doesn't exist
+	const processedPath = path.join(__dirname, "../processed");
+	let completedChunks = 0; // Counter for completed chunks
+
+	// Create directories if they don't exist
 	if (!fs.existsSync(outputPath)) {
 		fs.mkdirSync(outputPath);
 	}
+	if (!fs.existsSync(processedPath)) {
+		fs.mkdirSync(processedPath);
+	}
+
 	console.log(`Processing file at ${inputPath}`);
 
 	ffmpeg.ffprobe(inputPath, function (err, metadata) {
@@ -33,8 +40,16 @@ const splitWMV = (inputPath: string, outputPath: string, chunkSize: number) => {
 				.output(outputFilePath)
 				.on("end", function (err) {
 					console.log(`Chunk saved at ${outputFilePath}`);
-					if (!err) {
-						console.log("conversion Done");
+
+					completedChunks++;
+					if (completedChunks === numChunks) {
+						const newLocation = path.join(
+							processedPath,
+							path.basename(inputPath)
+						);
+						fs.rename(inputPath, newLocation, (err) => {
+							if (err) console.error(`Error moving file: ${err}`);
+						});
 					}
 				})
 				.on("error", function (err) {
