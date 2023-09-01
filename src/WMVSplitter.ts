@@ -74,7 +74,11 @@ const chunkSize = 100 * 1024 * 1024; // 100MB
 
 // Find all .wmv files in the input directory
 const files = fs.readdirSync(inputDir).filter((file) => file.endsWith(".wmv"));
-
+// If no .wmv files found in the input directory, warn and end the script
+if (files.length === 0) {
+	console.warn("No .wmv files found in the input directory. Terminating script.");
+	process.exit(0);
+}
 // Process each file
 files.forEach((file) => {
 	const inputPath = path.join(inputDir, file);
