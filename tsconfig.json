@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist", // specify the output directory for the compiled JavaScript files
+    "rootDir": "./src", // specify the root directory of input files
+    "module": "CommonJS",
+    "target": "ES2020",
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "sourceMap": true
+  },
+  "include": [
+    "src/**/*",
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
