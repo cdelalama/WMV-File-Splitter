@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as path from "path";
 
 export function ensureDirExists(dirPath: string): void {
 	if (!fs.existsSync(dirPath)) {
@@ -10,3 +11,12 @@ export function ensureDirExists(dirPath: string): void {
 		}
 	}
 }
+
+export function ensureProjectDirExists(basePath: string, projectName: string, chunkSize: number): string {
+  const chunkSizeMB = (chunkSize / (1024 * 1024)).toFixed(2);
+  const projectDir = `${projectName}-${chunkSizeMB}MB`;
+  const projectPath = path.join(basePath, projectDir);
+  ensureDirExists(projectPath);
+  return projectPath;
+}
+

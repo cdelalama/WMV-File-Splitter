@@ -1,6 +1,6 @@
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { ensureDirExists } from "./directoryUtils.js";
+import { ensureDirExists, ensureProjectDirExists } from "./directoryUtils.js";
 import { processChunk } from "./ffmpegUtils.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -11,7 +11,7 @@ import ora from "ora";
 export async function splitWMV(inputPath, outputPath, chunkSize) {
     const originalFileName = path.basename(inputPath, path.extname(inputPath));
     const processedPath = path.join(__dirname, "../processed");
-    ensureDirExists(outputPath);
+    const projectOutputPath = ensureProjectDirExists(outputPath, originalFileName, chunkSize);
     ensureDirExists(processedPath);
     const metadata = await new Promise((resolve, reject) => {
         ffmpeg.ffprobe(inputPath, (err, metadata) => {
@@ -30,7 +30,7 @@ export async function splitWMV(inputPath, outputPath, chunkSize) {
     const chunkPromises = [];
     for (let i = 0; i < numChunks; i++) {
         const start = i * chunkDuration;
-        chunkPromises.push(processChunk(inputPath, outputPath, start, chunkDuration));
+        chunkPromises.push(processChunk(inputPath, projectOutputPath, start, chunkDuration));
     }
     await Promise.all(chunkPromises);
     spinner.stop();
