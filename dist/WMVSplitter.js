@@ -28,12 +28,6 @@ const splitWMV = (inputPath, outputPath, chunkSize) => {
             console.error(`Failed to create processed directory: ${err}`);
             return; // Exit the function
         }
-        if (!fs.existsSync(outputPath)) {
-            fs.mkdirSync(outputPath);
-        }
-        if (!fs.existsSync(processedPath)) {
-            fs.mkdirSync(processedPath);
-        }
         console.log(`Processing file at ${inputPath}`);
         ffmpeg.ffprobe(inputPath, function (err, metadata) {
             if (err || !metadata.format || metadata.format.duration === undefined) {

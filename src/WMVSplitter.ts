@@ -30,12 +30,6 @@ const splitWMV = (inputPath: string, outputPath: string, chunkSize: number) => {
 			console.error(`Failed to create processed directory: ${err}`);
 			return; // Exit the function
 		}
-		if (!fs.existsSync(outputPath)) {
-			fs.mkdirSync(outputPath);
-		}
-		if (!fs.existsSync(processedPath)) {
-			fs.mkdirSync(processedPath);
-		}
 
 		console.log(`Processing file at ${inputPath}`);
 
