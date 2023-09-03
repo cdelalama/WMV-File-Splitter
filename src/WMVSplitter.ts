@@ -20,22 +20,29 @@ function ensureDirExists(dirPath: string): void {
 	}
 }
 
-const splitWMV = (inputPath: string, outputPath: string, chunkSize: number) => {
-	return new Promise<void>((resolve, reject) => {
+async function splitWMV(
+	inputPath: string,
+	outputPath: string,
+	chunkSize: number
+): Promise<void> {
+	return new Promise<void>(async (resolve, reject) => {
 		const originalFileName = path.basename(inputPath, path.extname(inputPath));
 		const processedPath = path.join(__dirname, "../processed");
+
 		try {
 			ensureDirExists(outputPath);
 			ensureDirExists(processedPath);
 		} catch (err) {
-			return; // Exit the function if any directory creation fails
+			reject(err); // Reject the promise if directory creation fails
+			return;
 		}
 
 		console.log(`Processing file at ${inputPath}`);
 
-		ffmpeg.ffprobe(inputPath, async function (err, metadata) {
-			if (err || !metadata.format || metadata.format.duration === undefined) {
+		ffmpeg.ffprobe(inputPath, async (err, metadata) => {
+			if (err || !metadata?.format?.duration) {
 				console.error("Could not retrieve video duration.");
+				reject(err);
 				return;
 			}
 
@@ -45,11 +52,7 @@ const splitWMV = (inputPath: string, outputPath: string, chunkSize: number) => {
 			const numChunks: number = Math.ceil(fileSize / chunkSize);
 			const chunkDuration: number = duration / numChunks;
 
-			const spinner = ora(
-				`Processing ${numChunks} chunks of approximately ${
-					chunkSize / (1024 * 1024)
-				} MB. This may take a while...`
-			).start();
+			const spinner = ora(`Processing ${numChunks} chunks...`).start();
 
 			let completedChunks = 0;
 
@@ -94,7 +97,7 @@ const splitWMV = (inputPath: string, outputPath: string, chunkSize: number) => {
 			}
 		});
 	});
-};
+}
 
 const defaultChunkSizeMB = 100; // Default to 100MB
 let chunkSize: number;

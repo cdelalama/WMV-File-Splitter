@@ -17,8 +17,8 @@ function ensureDirExists(dirPath) {
         }
     }
 }
-const splitWMV = (inputPath, outputPath, chunkSize) => {
-    return new Promise((resolve, reject) => {
+async function splitWMV(inputPath, outputPath, chunkSize) {
+    return new Promise(async (resolve, reject) => {
         const originalFileName = path.basename(inputPath, path.extname(inputPath));
         const processedPath = path.join(__dirname, "../processed");
         try {
@@ -26,12 +26,14 @@ const splitWMV = (inputPath, outputPath, chunkSize) => {
             ensureDirExists(processedPath);
         }
         catch (err) {
-            return; // Exit the function if any directory creation fails
+            reject(err); // Reject the promise if directory creation fails
+            return;
         }
         console.log(`Processing file at ${inputPath}`);
-        ffmpeg.ffprobe(inputPath, async function (err, metadata) {
-            if (err || !metadata.format || metadata.format.duration === undefined) {
+        ffmpeg.ffprobe(inputPath, async (err, metadata) => {
+            if (err || !metadata?.format?.duration) {
                 console.error("Could not retrieve video duration.");
+                reject(err);
                 return;
             }
             const duration = metadata.format.duration;
@@ -39,7 +41,7 @@ const splitWMV = (inputPath, outputPath, chunkSize) => {
             const fileSize = stat.size;
             const numChunks = Math.ceil(fileSize / chunkSize);
             const chunkDuration = duration / numChunks;
-            const spinner = ora(`Processing ${numChunks} chunks of approximately ${chunkSize / (1024 * 1024)} MB. This may take a while...`).start();
+            const spinner = ora(`Processing ${numChunks} chunks...`).start();
             let completedChunks = 0;
             for (let i = 0; i < numChunks; i++) {
                 const start = i * chunkDuration;
@@ -77,7 +79,7 @@ const splitWMV = (inputPath, outputPath, chunkSize) => {
             }
         });
     });
-};
+}
 const defaultChunkSizeMB = 100; // Default to 100MB
 let chunkSize;
 try {
