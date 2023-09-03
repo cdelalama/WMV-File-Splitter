@@ -1,9 +1,9 @@
 import * as path from "path";
 import ffmpeg from "fluent-ffmpeg";
-export async function processChunk(inputPath, outputPath, chunkStart, chunkDuration) {
+export async function processChunk(inputPath, outputPath, chunkStart, chunkDuration, chunkNumber) {
     return new Promise((resolve, reject) => {
         const originalFileName = path.basename(inputPath, path.extname(inputPath));
-        const outputFileName = `${originalFileName}-chunk-${chunkStart}.wmv`;
+        const outputFileName = `${originalFileName}-chunk-${chunkNumber}.wmv`;
         const outputFilePath = path.join(outputPath, outputFileName);
         ffmpeg(inputPath)
             .setStartTime(chunkStart)

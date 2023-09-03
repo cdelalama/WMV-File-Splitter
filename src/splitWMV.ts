@@ -52,7 +52,7 @@ export async function splitWMV(
 	for (let i = 0; i < numChunks; i++) {
 		const start = i * chunkDuration;
 		chunkPromises.push(
-			processChunk(inputPath, projectOutputPath, start, chunkDuration)
+			processChunk(inputPath, projectOutputPath, start, chunkDuration, i + 1)
 		);
 	}
 

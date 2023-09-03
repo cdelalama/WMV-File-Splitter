@@ -35,7 +35,7 @@ export async function splitWMV(inputPath, outputPath, chunkSize) {
     const chunkPromises = [];
     for (let i = 0; i < numChunks; i++) {
         const start = i * chunkDuration;
-        chunkPromises.push(processChunk(inputPath, projectOutputPath, start, chunkDuration));
+        chunkPromises.push(processChunk(inputPath, projectOutputPath, start, chunkDuration, i + 1));
     }
     await Promise.all(chunkPromises);
     spinner.stop();
