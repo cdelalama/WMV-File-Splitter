@@ -39,83 +39,58 @@ function ensureDirExists(dirPath: string): void {
 	}
 }
 
-async function splitWMV(
-	inputPath: string,
-	outputPath: string,
-	chunkSize: number
-): Promise<void> {
-	return new Promise<void>(async (resolve, reject) => {
-		const originalFileName = path.basename(inputPath, path.extname(inputPath));
-		const processedPath = path.join(__dirname, "../processed");
 
-		try {
-			ensureDirExists(outputPath);
-			ensureDirExists(processedPath);
-		} catch (err) {
-			reject(err); // Reject the promise if directory creation fails
-			return;
-		}
 
-		console.log(`Processing file at ${inputPath}`);
+async function processChunk(inputPath: string, outputPath: string, chunkStart: number, chunkDuration: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const originalFileName = path.basename(inputPath, path.extname(inputPath));
+    const outputFileName = `${originalFileName}-chunk-${chunkStart}.wmv`;
+    const outputFilePath = path.join(outputPath, outputFileName);
 
-		ffmpeg.ffprobe(inputPath, async (err, metadata) => {
-			if (err || !metadata?.format?.duration) {
-				console.error("Could not retrieve video duration.");
-				reject(err);
-				return;
-			}
+    ffmpeg(inputPath)
+      .setStartTime(chunkStart)
+      .setDuration(chunkDuration)
+      .output(outputFilePath)
+      .on('end', () => resolve())
+      .on('error', (err) => reject(err))
+      .run();
+  });
+}
 
-			const duration: number = metadata.format.duration;
-			const stat = await fs.promises.stat(inputPath);
-			const fileSize: number = stat.size;
-			const numChunks: number = Math.ceil(fileSize / chunkSize);
-			const chunkDuration: number = duration / numChunks;
+async function splitWMV(inputPath: string, outputPath: string, chunkSize: number): Promise<void> {
+  const originalFileName = path.basename(inputPath, path.extname(inputPath));
+  const processedPath = path.join(__dirname, "../processed");
 
-			const spinner = ora(`Processing ${numChunks} chunks...`).start();
+  ensureDirExists(outputPath);
+  ensureDirExists(processedPath);
 
-			let completedChunks = 0;
+  const metadata = await new Promise<any>((resolve, reject) => {
+    ffmpeg.ffprobe(inputPath, (err, metadata) => {
+      if (err || !metadata?.format?.duration) reject(err);
+      else resolve(metadata);
+    });
+  });
 
-			for (let i = 0; i < numChunks; i++) {
-				const start = i * chunkDuration;
-				const outputFileName = `${originalFileName}-chunk-${i}.wmv`;
-				const outputFilePath = path.join(outputPath, outputFileName);
+  const duration: number = metadata.format.duration;
+  const stat = await fs.promises.stat(inputPath);
+  const fileSize: number = stat.size;
+  const numChunks: number = Math.ceil(fileSize / chunkSize);
+  const chunkDuration: number = duration / numChunks;
 
-				ffmpeg(inputPath)
-					.setStartTime(start)
-					.setDuration(chunkDuration)
-					.output(outputFilePath)
-					.on("end", function (err) {
-						if (err) {
-							reject(err);
-							return;
-						}
+  const spinner = ora(`Processing ${numChunks} chunks...`).start();
 
-						completedChunks++;
-						if (completedChunks === numChunks) {
-							spinner.stop();
-							const newLocation = path.join(
-								processedPath,
-								path.basename(inputPath)
-							);
-							fs.rename(inputPath, newLocation, (err) => {
-								if (err) {
-									console.error(`Error moving file: ${err}`);
-									reject(err);
-									return;
-								}
-								console.log(`Moved input file to ${newLocation}`);
-								resolve();
-							});
-						}
-					})
-					.on("error", function (err) {
-						console.log("error: ", err);
-						reject(err);
-					})
-					.run();
-			}
-		});
-	});
+  const chunkPromises: Promise<void>[] = [];
+  for (let i = 0; i < numChunks; i++) {
+    const start = i * chunkDuration;
+    chunkPromises.push(processChunk(inputPath, outputPath, start, chunkDuration));
+  }
+
+  await Promise.all(chunkPromises);
+
+  spinner.stop();
+  const newLocation = path.join(processedPath, path.basename(inputPath));
+  await fs.promises.rename(inputPath, newLocation);
+  console.log(`Moved input file to ${newLocation}`);
 }
 
 const configPath = path.join(__dirname, '../config/config.json');
