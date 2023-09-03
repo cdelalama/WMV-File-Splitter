@@ -9,26 +9,26 @@ import * as path from "path";
 import ffmpeg from "fluent-ffmpeg";
 import ora from "ora";
 
+function ensureDirExists(dirPath: string): void {
+	if (!fs.existsSync(dirPath)) {
+		try {
+			fs.mkdirSync(dirPath);
+		} catch (err) {
+			console.error(`Failed to create directory ${dirPath}: ${err}`);
+			throw err;
+		}
+	}
+}
+
 const splitWMV = (inputPath: string, outputPath: string, chunkSize: number) => {
 	return new Promise<void>((resolve, reject) => {
 		const originalFileName = path.basename(inputPath, path.extname(inputPath));
 		const processedPath = path.join(__dirname, "../processed");
 		try {
-			if (!fs.existsSync(outputPath)) {
-				fs.mkdirSync(outputPath);
-			}
+			ensureDirExists(outputPath);
+			ensureDirExists(processedPath);
 		} catch (err) {
-			console.error(`Failed to create output directory: ${err}`);
-			return; // Exit the function
-		}
-
-		try {
-			if (!fs.existsSync(processedPath)) {
-				fs.mkdirSync(processedPath);
-			}
-		} catch (err) {
-			console.error(`Failed to create processed directory: ${err}`);
-			return; // Exit the function
+			return; // Exit the function if any directory creation fails
 		}
 
 		console.log(`Processing file at ${inputPath}`);
