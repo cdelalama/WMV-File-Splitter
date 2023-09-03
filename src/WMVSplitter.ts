@@ -9,6 +9,25 @@ import * as path from "path";
 import ffmpeg from "fluent-ffmpeg";
 import ora from "ora";
 
+type Config = {
+  chunkSizeMB: number;
+};
+
+const defaultConfig: Config = {
+  chunkSizeMB: 100
+};
+
+function loadConfig(filePath: string): Config {
+  try {
+    const configFile = fs.readFileSync(filePath, 'utf8');
+    const parsedConfig: Config = JSON.parse(configFile);
+    return { ...defaultConfig, ...parsedConfig };
+  } catch (error) {
+    console.warn(`Failed to load config from ${filePath}, using default settings.`);
+    return defaultConfig;
+  }
+}
+
 function ensureDirExists(dirPath: string): void {
 	if (!fs.existsSync(dirPath)) {
 		try {
@@ -99,20 +118,9 @@ async function splitWMV(
 	});
 }
 
-const defaultChunkSizeMB = 100; // Default to 100MB
-let chunkSize: number;
-
-try {
-	const config = JSON.parse(
-		fs.readFileSync(path.join(__dirname, "../config/config.json"), "utf8")
-	);
-	chunkSize = (config.chunkSizeMB || defaultChunkSizeMB) * 1024 * 1024;
-} catch {
-	console.log(
-		`Could not read configuration file. Defaulting to chunk size of ${defaultChunkSizeMB}MB.`
-	);
-	chunkSize = defaultChunkSizeMB * 1024 * 1024;
-}
+const configPath = path.join(__dirname, '../config/config.json');
+const config = loadConfig(configPath);
+const chunkSize = config.chunkSizeMB * 1024 * 1024;
 
 const inputDir = path.join(__dirname, "../input/");
 const outputPath = path.join(__dirname, "../output/");
