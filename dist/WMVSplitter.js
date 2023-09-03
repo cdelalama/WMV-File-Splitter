@@ -1,80 +1,11 @@
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { loadConfig } from "./config.js";
+import { splitWMV } from "./splitWMV.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import * as fs from "fs";
 import * as path from "path";
-import ffmpeg from "fluent-ffmpeg";
-import ora from "ora";
-const defaultConfig = {
-    chunkSizeMB: 100
-};
-function loadConfig(filePath) {
-    try {
-        const configFile = fs.readFileSync(filePath, 'utf8');
-        const parsedConfig = JSON.parse(configFile);
-        return { ...defaultConfig, ...parsedConfig };
-    }
-    catch (error) {
-        console.warn(`Failed to load config from ${filePath}, using default settings.`);
-        return defaultConfig;
-    }
-}
-function ensureDirExists(dirPath) {
-    if (!fs.existsSync(dirPath)) {
-        try {
-            fs.mkdirSync(dirPath);
-        }
-        catch (err) {
-            console.error(`Failed to create directory ${dirPath}: ${err}`);
-            throw err;
-        }
-    }
-}
-async function processChunk(inputPath, outputPath, chunkStart, chunkDuration) {
-    return new Promise((resolve, reject) => {
-        const originalFileName = path.basename(inputPath, path.extname(inputPath));
-        const outputFileName = `${originalFileName}-chunk-${chunkStart}.wmv`;
-        const outputFilePath = path.join(outputPath, outputFileName);
-        ffmpeg(inputPath)
-            .setStartTime(chunkStart)
-            .setDuration(chunkDuration)
-            .output(outputFilePath)
-            .on('end', () => resolve())
-            .on('error', (err) => reject(err))
-            .run();
-    });
-}
-async function splitWMV(inputPath, outputPath, chunkSize) {
-    const originalFileName = path.basename(inputPath, path.extname(inputPath));
-    const processedPath = path.join(__dirname, "../processed");
-    ensureDirExists(outputPath);
-    ensureDirExists(processedPath);
-    const metadata = await new Promise((resolve, reject) => {
-        ffmpeg.ffprobe(inputPath, (err, metadata) => {
-            if (err || !metadata?.format?.duration)
-                reject(err);
-            else
-                resolve(metadata);
-        });
-    });
-    const duration = metadata.format.duration;
-    const stat = await fs.promises.stat(inputPath);
-    const fileSize = stat.size;
-    const numChunks = Math.ceil(fileSize / chunkSize);
-    const chunkDuration = duration / numChunks;
-    const spinner = ora(`Processing ${numChunks} chunks...`).start();
-    const chunkPromises = [];
-    for (let i = 0; i < numChunks; i++) {
-        const start = i * chunkDuration;
-        chunkPromises.push(processChunk(inputPath, outputPath, start, chunkDuration));
-    }
-    await Promise.all(chunkPromises);
-    spinner.stop();
-    const newLocation = path.join(processedPath, path.basename(inputPath));
-    await fs.promises.rename(inputPath, newLocation);
-    console.log(`Moved input file to ${newLocation}`);
-}
 const configPath = path.join(__dirname, '../config/config.json');
 const config = loadConfig(configPath);
 const chunkSize = config.chunkSizeMB * 1024 * 1024;
