@@ -12,6 +12,11 @@ export async function splitWMV(inputPath, outputPath, chunkSize) {
     const originalFileName = path.basename(inputPath, path.extname(inputPath));
     const processedPath = path.join(__dirname, "../processed");
     const projectOutputPath = ensureProjectDirExists(outputPath, originalFileName, chunkSize);
+    if (projectOutputPath === null) {
+        const chunkSizeMB = (chunkSize / (1024 * 1024)).toFixed();
+        console.log(`Directory for ${originalFileName} with chunk size ${chunkSizeMB} MB already exists. Exiting.`);
+        return;
+    }
     ensureDirExists(processedPath);
     const metadata = await new Promise((resolve, reject) => {
         ffmpeg.ffprobe(inputPath, (err, metadata) => {

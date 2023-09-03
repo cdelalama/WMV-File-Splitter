@@ -12,9 +12,12 @@ export function ensureDirExists(dirPath) {
     }
 }
 export function ensureProjectDirExists(basePath, projectName, chunkSize) {
-    const chunkSizeMB = (chunkSize / (1024 * 1024)).toFixed(2);
+    const chunkSizeMB = (chunkSize / (1024 * 1024)).toFixed();
     const projectDir = `${projectName}-${chunkSizeMB}MB`;
     const projectPath = path.join(basePath, projectDir);
+    if (fs.existsSync(projectPath)) {
+        return null;
+    }
     ensureDirExists(projectPath);
     return projectPath;
 }

@@ -12,11 +12,18 @@ export function ensureDirExists(dirPath: string): void {
 	}
 }
 
-export function ensureProjectDirExists(basePath: string, projectName: string, chunkSize: number): string {
-  const chunkSizeMB = (chunkSize / (1024 * 1024)).toFixed(2);
-  const projectDir = `${projectName}-${chunkSizeMB}MB`;
-  const projectPath = path.join(basePath, projectDir);
-  ensureDirExists(projectPath);
-  return projectPath;
-}
+export function ensureProjectDirExists(
+	basePath: string,
+	projectName: string,
+	chunkSize: number
+): string | null {
+	const chunkSizeMB = (chunkSize / (1024 * 1024)).toFixed();
+	const projectDir = `${projectName}-${chunkSizeMB}MB`;
+	const projectPath = path.join(basePath, projectDir);
 
+	if (fs.existsSync(projectPath)) {
+		return null;
+	}
+	ensureDirExists(projectPath);
+	return projectPath;
+}

@@ -24,6 +24,13 @@ export async function splitWMV(
 		originalFileName,
 		chunkSize
 	);
+	if (projectOutputPath === null) {
+		const chunkSizeMB = (chunkSize / (1024 * 1024)).toFixed();
+		console.log(
+			`Directory for ${originalFileName} with chunk size ${chunkSizeMB} MB already exists. Exiting.`
+		);
+		return;
+	}
 	ensureDirExists(processedPath);
 
 	const metadata = await new Promise<any>((resolve, reject) => {
