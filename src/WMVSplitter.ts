@@ -33,14 +33,15 @@ const splitWMV = (inputPath: string, outputPath: string, chunkSize: number) => {
 
 		console.log(`Processing file at ${inputPath}`);
 
-		ffmpeg.ffprobe(inputPath, function (err, metadata) {
+		ffmpeg.ffprobe(inputPath, async function (err, metadata) {
 			if (err || !metadata.format || metadata.format.duration === undefined) {
 				console.error("Could not retrieve video duration.");
 				return;
 			}
 
 			const duration: number = metadata.format.duration;
-			const fileSize: number = fs.statSync(inputPath).size;
+			const stat = await fs.promises.stat(inputPath);
+			const fileSize: number = stat.size;
 			const numChunks: number = Math.ceil(fileSize / chunkSize);
 			const chunkDuration: number = duration / numChunks;
 

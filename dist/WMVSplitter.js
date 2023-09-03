@@ -29,13 +29,14 @@ const splitWMV = (inputPath, outputPath, chunkSize) => {
             return; // Exit the function if any directory creation fails
         }
         console.log(`Processing file at ${inputPath}`);
-        ffmpeg.ffprobe(inputPath, function (err, metadata) {
+        ffmpeg.ffprobe(inputPath, async function (err, metadata) {
             if (err || !metadata.format || metadata.format.duration === undefined) {
                 console.error("Could not retrieve video duration.");
                 return;
             }
             const duration = metadata.format.duration;
-            const fileSize = fs.statSync(inputPath).size;
+            const stat = await fs.promises.stat(inputPath);
+            const fileSize = stat.size;
             const numChunks = Math.ceil(fileSize / chunkSize);
             const chunkDuration = duration / numChunks;
             const spinner = ora(`Processing ${numChunks} chunks of approximately ${chunkSize / (1024 * 1024)} MB. This may take a while...`).start();
