@@ -10,6 +10,24 @@ const splitWMV = (inputPath, outputPath, chunkSize) => {
     return new Promise((resolve, reject) => {
         const originalFileName = path.basename(inputPath, path.extname(inputPath));
         const processedPath = path.join(__dirname, "../processed");
+        try {
+            if (!fs.existsSync(outputPath)) {
+                fs.mkdirSync(outputPath);
+            }
+        }
+        catch (err) {
+            console.error(`Failed to create output directory: ${err}`);
+            return; // Exit the function
+        }
+        try {
+            if (!fs.existsSync(processedPath)) {
+                fs.mkdirSync(processedPath);
+            }
+        }
+        catch (err) {
+            console.error(`Failed to create processed directory: ${err}`);
+            return; // Exit the function
+        }
         if (!fs.existsSync(outputPath)) {
             fs.mkdirSync(outputPath);
         }
@@ -68,7 +86,7 @@ const splitWMV = (inputPath, outputPath, chunkSize) => {
 const defaultChunkSizeMB = 100; // Default to 100MB
 let chunkSize;
 try {
-    const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/config.json'), 'utf8'));
+    const config = JSON.parse(fs.readFileSync(path.join(__dirname, "../config/config.json"), "utf8"));
     chunkSize = (config.chunkSizeMB || defaultChunkSizeMB) * 1024 * 1024;
 }
 catch {
@@ -87,11 +105,13 @@ const processingTasks = files.map((file) => {
     const inputPath = path.join(inputDir, file);
     return splitWMV(inputPath, outputPath, chunkSize);
 });
-Promise.all(processingTasks).then(() => {
+Promise.all(processingTasks)
+    .then(() => {
     const endTime = Date.now();
     const elapsedTime = (endTime - startTime) / 1000;
     console.log(`Processing completed in ${elapsedTime.toFixed(2)} seconds.`);
-}).catch((error) => {
+})
+    .catch((error) => {
     console.error("Error during process: ", error);
 });
 //# sourceMappingURL=WMVSplitter.js.map
